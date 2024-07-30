@@ -1,4 +1,4 @@
-package org.example.pges.entity.po;
+package org.example.pges.entity.dto;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -16,12 +16,10 @@ import java.util.Date;
  */
 
 @Data
-@TableName("business")
-public class BusinessPO {
+public class BusinessDTO {
 
     private Long outEmrDetailId;
 
-    @TableId
     private Long outVisitRecordId;
 
     private Date createTime;

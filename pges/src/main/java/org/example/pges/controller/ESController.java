@@ -2,6 +2,8 @@ package org.example.pges.controller;
 
 
 import org.example.pges.entity.TextDTO;
+import org.example.pges.entity.dto.SearchParamDTO;
+import org.example.pges.entity.po.BusinessPO;
 import org.example.pges.service.ESService;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,5 +25,10 @@ public class ESController {
     @PostMapping("/process")
     public Object process() {
         return esService.process();
+    }
+
+    @PostMapping("/search")
+    public List<BusinessPO> search(@RequestBody SearchParamDTO searchParamDTO) {
+        return esService.search(searchParamDTO);
     }
 }

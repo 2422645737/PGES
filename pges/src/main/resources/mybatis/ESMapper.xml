@@ -2,6 +2,25 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="org.example.pges.dao.ESMapper">
     <select id="hasIndex" resultType="integer">
+        select count(1) from me.es_index where word = #{word} and code = #{code}
+    </select>
 
+    <select id="getIdsByWordAndCode" resultType="object">
+        select ids from me.es_index where word = #{word} and code = #{code}
+    </select>
+
+    <update id="updateIndex">
+        update me.es_index set ids = #{ids} where word = #{word} and code = #{code}
+    </update>
+
+    <insert id="insertIndex">
+        insert into me.es_index values (#{esIndexPo.word},#{esIndexPo.code},#{esIndexPo.beginTime},#{esIndexPo.endTime},#{esIndexPo.ids});
+    </insert>
+
+    <select id="searchByParam" resultType="object">
+        select ids from me.es_index where word in
+        <foreach collection="param.text" open="(" separator="," close=")" item="word">
+            #{word}
+        </foreach>
     </select>
 </mapper>
