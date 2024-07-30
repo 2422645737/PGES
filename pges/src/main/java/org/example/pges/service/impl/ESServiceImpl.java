@@ -1,7 +1,10 @@
 package org.example.pges.service.impl;
 
+import cn.hutool.core.date.DateUtil;
 import org.apdplat.word.WordSegmenter;
 import org.apdplat.word.segmentation.Word;
+import org.example.pges.constance.IndexNumConst;
+import org.example.pges.constance.NodeCodeConst;
 import org.example.pges.dao.BusinessMapper;
 import org.example.pges.dao.ESMapper;
 import org.example.pges.entity.TextDTO;
@@ -9,6 +12,8 @@ import org.example.pges.entity.dto.SearchParamDTO;
 import org.example.pges.entity.po.BusinessPO;
 import org.example.pges.entity.po.ESIndexPo;
 import org.example.pges.service.ESService;
+import org.example.pges.utils.ESDateUtils;
+import org.example.pges.utils.IdGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -32,6 +37,7 @@ public class ESServiceImpl implements ESService {
 
     @Resource
     BusinessMapper businessMapper;
+
     @Override
     public List<String> insert(TextDTO textDTO) {
         //查询库中当前不存在的索引
@@ -41,46 +47,54 @@ public class ESServiceImpl implements ESService {
     }
 
     /**
+     * 处理数据库中的数据，生成索引
      * @return {@link List }<{@link String }>
      */
     @Override
     public Object process() {
-        //一次读取100条数据
-        int offset = 0;
-        int limit = 100;
-        List<BusinessPO> byOffset = businessMapper.findByOffset(limit, offset);
-        Map<String,List<Long>> map = new HashMap<>(16);
+        //获取待处理的病历数据
+        List<BusinessPO> byOffset = businessMapper.findByOffset(IndexNumConst.MAX_COUNT);
+        //存储key -> id集合
+        Map<String,List<BusinessPO>> map = new HashMap<>(16);
         for (BusinessPO businessPO : byOffset) {
             String contentText = businessPO.getContentText();
             List<Word> seg = WordSegmenter.seg(contentText);
             for (Word word : seg) {
-                List<Long> idList = map.getOrDefault(word.getText(), new ArrayList<>());
-                idList.add(businessPO.getOutEmrDetailId());
+                List<BusinessPO> idList = map.getOrDefault(word.getText(), new ArrayList<>());
+                idList.add(businessPO);
                 map.put(word.getText(),idList);
             }
         }
+
         //更新索引数据库
         for(String key : map.keySet()){
-            List<Long> list = map.get(key);
+            List<BusinessPO> list = map.get(key);
+            //将list按照创建时间排序
+            list = list.stream().sorted(Comparator.comparing(BusinessPO::getCreateTime)).toList();
             //判断当前key是否存在
-            int hasIndex = esMapper.hasIndex(key, "B1014");
+            int hasIndex = esMapper.hasIndex(key, NodeCodeConst.B1014);
             if(hasIndex == 0){
-                //不存在索引，则直接插入
-                ESIndexPo esIndexPo = new ESIndexPo();
-                esIndexPo.setWord(key);
-                esIndexPo.setIds(list.toArray(new Long[0]));
-                esIndexPo.setBeginTime(new Date());
-                esIndexPo.setEndTime(new Date());
-                esIndexPo.setCode("B1014");
-                esMapper.insertIndex(esIndexPo);
-                continue;
+                firstInsert(key, list);
+            }else{
+                //对于已经存在的key，需要判断数据库中的时间段是否包含当前时间段
+                List<ESIndexPo> byWordAndCode = esMapper.getByWordAndCode(key, NodeCodeConst.B1014);
+                for (ESIndexPo esIndexPo : byWordAndCode) {
+                    for (BusinessPO businessPO : list) {
+                        if (businessPO.getCreateTime().after(esIndexPo.getBeginTime()) && businessPO.getCreateTime().before(esIndexPo.getEndTime())) {
+                            esIndexPo.getIds();
+                        }
+                    }
+                }
+
+
+                //获取当前数据库中保存的id
+                Long[] b1014 = (Long[]) esMapper.getIdsByWordAndCode(key, "B1014");
+                //求交集
+                Set<Long> set = new HashSet(list);
+                set.addAll(Arrays.stream(b1014).collect(Collectors.toList()));
+                esMapper.updateIndex(key,set.stream().toList().toArray(new Long[0]),"B1014");
+
             }
-            //获取当前数据库中保存的id
-            Long[] b1014 = (Long[]) esMapper.getIdsByWordAndCode(key, "B1014");
-            //求交集
-            Set<Long> set = new HashSet(list);
-            set.addAll(Arrays.stream(b1014).collect(Collectors.toList()));
-            esMapper.updateIndex(key,set.stream().toList().toArray(new Long[0]),"B1014");
         }
 
         List<Long> collect = byOffset.stream().map(BusinessPO::getOutVisitRecordId).collect(Collectors.toList());
@@ -88,6 +102,29 @@ public class ESServiceImpl implements ESService {
             businessMapper.updateEsFlag(collect);
         }
         return map;
+    }
+
+    /**
+     * 首次插入数据
+     * @param key
+     * @param list
+     */
+    private void firstInsert(String key, List<BusinessPO> list) {
+        //分割时间段
+        List<Date[]> dateSegment = ESDateUtils.getDateSegment(list.get(0).getCreateTime(), list.get(list.size() - 1).getCreateTime());
+        //将数据按照时间段分组
+        Map<Date,List<Long>> businessMapByCreateTime = new HashMap<>();
+        for (Date[] dates : dateSegment) {
+            List<BusinessPO> businessPOS = list.stream().filter(e -> e.getCreateTime().after(dates[0]) && e.getCreateTime().before(dates[1])).collect(Collectors.toList());
+            ESIndexPo esIndexPo = new ESIndexPo();
+            esIndexPo.setWord(key);
+            esIndexPo.setIds(businessPOS.stream().map(BusinessPO::getOutEmrDetailId).toList().toArray(new Long[0]));
+            esIndexPo.setBeginTime(dates[0]);
+            esIndexPo.setEndTime(dates[1]);
+            esIndexPo.setCode(NodeCodeConst.B1014);
+            esIndexPo.setId(IdGenerator.generateId());
+            esMapper.insertIndex(esIndexPo);
+        }
     }
 
     /**

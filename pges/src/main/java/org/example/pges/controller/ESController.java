@@ -17,6 +17,7 @@ public class ESController {
 
     @Resource
     private ESService esService;
+
     @PostMapping("/insert")
     public List<String> index(@RequestBody TextDTO textDTO) {
         return esService.insert(textDTO);

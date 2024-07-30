@@ -11,6 +11,8 @@ import java.util.Date;
 @TableName("es_index")
 public class ESIndexPo {
     @TableId
+    private Long id;
+
     private String word;
 
     private Date beginTime;

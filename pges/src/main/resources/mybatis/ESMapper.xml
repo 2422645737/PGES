@@ -13,6 +13,10 @@
         update me.es_index set ids = #{ids} where word = #{word} and code = #{code}
     </update>
 
+    <select id="getByWordAndCode" resultType="org.example.pges.entity.po.ESIndexPo">
+        select * from me.es_index where word = #{word} and code = #{code}
+    </select>
+
     <insert id="insertIndex">
         insert into me.es_index values (#{esIndexPo.word},#{esIndexPo.code},#{esIndexPo.beginTime},#{esIndexPo.endTime},#{esIndexPo.ids});
     </insert>

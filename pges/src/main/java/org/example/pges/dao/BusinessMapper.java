@@ -16,7 +16,7 @@ public interface BusinessMapper extends BaseMapper<BusinessPO> {
      * @return {@link List }<{@link BusinessPO }>
      */
 
-    List<BusinessPO> findByOffset(@Param("limit") int limit, @Param("offset") int offset);
+    List<BusinessPO> findByOffset(@Param("limit") int limit);
 
     /**
      * 更新es标识

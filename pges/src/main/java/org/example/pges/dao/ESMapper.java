@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.example.pges.entity.dto.SearchParamDTO;
+import org.example.pges.entity.po.BusinessPO;
 import org.example.pges.entity.po.ESIndexPo;
 
 import java.util.List;
@@ -37,6 +38,14 @@ public interface ESMapper extends BaseMapper<ESIndexPo> {
 
     Object getIdsByWordAndCode(@Param("word") String word, @Param("code") String code);
 
+    /**
+     * 通过code和word检索出所有项目
+     * @param word
+     * @param code
+     * @return {@link List }<{@link Long }>
+     */
+
+    List<ESIndexPo> getByWordAndCode(@Param("word") String word, @Param("code") String code);
     /**
      * 更新索引
      * @param word
