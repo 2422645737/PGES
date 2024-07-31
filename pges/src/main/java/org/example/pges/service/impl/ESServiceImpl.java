@@ -1,5 +1,6 @@
 package org.example.pges.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import org.apdplat.word.WordSegmenter;
 import org.apdplat.word.segmentation.Word;
@@ -78,15 +79,18 @@ public class ESServiceImpl implements ESService {
             }else{
                 //对于已经存在的key，需要判断数据库中的时间段是否包含当前时间段
                 List<ESIndexPo> byWordAndCode = esMapper.getByWordAndCode(key, NodeCodeConst.B1014);
+
                 for (ESIndexPo esIndexPo : byWordAndCode) {
-                    for (BusinessPO businessPO : list) {
-                        if (businessPO.getCreateTime().after(esIndexPo.getBeginTime()) && businessPO.getCreateTime().before(esIndexPo.getEndTime())) {
-                            esIndexPo.getIds();
-                        }
+                    //获取所有在当前时间段之内的数据
+                    List<BusinessPO> currentDateIntervalBussinessData = list.stream().filter(e -> ESDateUtils.between(esIndexPo.getBeginTime(), esIndexPo.getEndTime(), e.getCreateTime())).collect(Collectors.toList());
+                    if(CollUtil.isEmpty(currentDateIntervalBussinessData)){
+                        continue;
                     }
+                    Long[] ids = esIndexPo.getIds();
+                    List<Long> businessIds = currentDateIntervalBussinessData.stream().map(BusinessPO::getOutEmrDetailId).collect(Collectors.toList());
+                    Long[] newIds = new Long[ids == null ? currentDateIntervalBussinessData.size() : ids.length + currentDateIntervalBussinessData.size()];
+
                 }
-
-
                 //获取当前数据库中保存的id
                 Long[] b1014 = (Long[]) esMapper.getIdsByWordAndCode(key, "B1014");
                 //求交集
@@ -115,7 +119,7 @@ public class ESServiceImpl implements ESService {
         //将数据按照时间段分组
         Map<Date,List<Long>> businessMapByCreateTime = new HashMap<>();
         for (Date[] dates : dateSegment) {
-            List<BusinessPO> businessPOS = list.stream().filter(e -> e.getCreateTime().after(dates[0]) && e.getCreateTime().before(dates[1])).collect(Collectors.toList());
+            List<BusinessPO> businessPOS = list.stream().filter(e -> ESDateUtils.between(dates[0],dates[1],e.getCreateTime())).collect(Collectors.toList());
             ESIndexPo esIndexPo = new ESIndexPo();
             esIndexPo.setWord(key);
             esIndexPo.setIds(businessPOS.stream().map(BusinessPO::getOutEmrDetailId).toList().toArray(new Long[0]));

@@ -37,4 +37,8 @@ public class ESDateUtils {
         }
         return segments;
     };
+
+    public static boolean between(Date startDate,Date endDate,Date date){
+        return date.after(startDate) && date.before(endDate);
+    }
 }
