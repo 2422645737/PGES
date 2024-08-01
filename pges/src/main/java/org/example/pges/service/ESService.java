@@ -2,8 +2,8 @@ package org.example.pges.service;
 
 import org.example.pges.entity.TextDTO;
 import org.example.pges.entity.dto.SearchParamDTO;
+import org.example.pges.entity.dto.WordSegementDTO;
 import org.example.pges.entity.po.BusinessPO;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -14,4 +14,10 @@ public interface ESService {
     Object process();
 
     List<BusinessPO> search(SearchParamDTO searchParamDTO);
+
+    /**
+     * 测试函数
+     */
+
+    List<WordSegementDTO> test(String word);
 }

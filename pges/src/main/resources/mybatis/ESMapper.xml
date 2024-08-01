@@ -10,7 +10,7 @@
     </select>
 
     <update id="updateIndex">
-        update me.es_index set ids = #{ids} where word = #{word} and code = #{code}
+        update me.es_index set ids = #{esIndex.ids} where id = #{esIndex.id}
     </update>
 
     <select id="getByWordAndCode" resultType="org.example.pges.entity.po.ESIndexPo">
@@ -18,7 +18,10 @@
     </select>
 
     <insert id="insertIndex">
-        insert into me.es_index values (#{esIndexPo.word},#{esIndexPo.code},#{esIndexPo.beginTime},#{esIndexPo.endTime},#{esIndexPo.ids});
+        insert into me.es_index (word,code,begin_time,end_time,ids,id) values
+        <foreach collection="esIndexPos" separator=","  item="esIndexPo">
+            (#{esIndexPo.word},#{esIndexPo.code},#{esIndexPo.beginTime},#{esIndexPo.endTime},#{esIndexPo.ids},#{esIndexPo.id})
+        </foreach>
     </insert>
 
     <select id="searchByParam" resultType="object">
@@ -26,5 +29,11 @@
         <foreach collection="param.text" open="(" separator="," close=")" item="word">
             #{word}
         </foreach>
+        <if test="param.beginTime != null">
+            and begin_time &gt;= #{param.beginTime}
+        </if>
+        <if test="param.endTime != null">
+            and end_time &lt;= #{param.endTime}
+        </if>
     </select>
 </mapper>

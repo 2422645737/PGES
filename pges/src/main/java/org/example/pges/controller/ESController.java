@@ -3,6 +3,7 @@ package org.example.pges.controller;
 
 import org.example.pges.entity.TextDTO;
 import org.example.pges.entity.dto.SearchParamDTO;
+import org.example.pges.entity.dto.WordSegementDTO;
 import org.example.pges.entity.po.BusinessPO;
 import org.example.pges.service.ESService;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,11 @@ public class ESController {
     @PostMapping("/insert")
     public List<String> index(@RequestBody TextDTO textDTO) {
         return esService.insert(textDTO);
+    }
+
+    @PostMapping("/test")
+    public List<WordSegementDTO> test(@RequestBody String word) {
+        return esService.test(word);
     }
 
     @PostMapping("/process")

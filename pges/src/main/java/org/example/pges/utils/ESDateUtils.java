@@ -28,12 +28,12 @@ public class ESDateUtils {
      */
     public static List<Date[]> getDateSegment(Date startDate, Date endDate, int days) {
         List<Date[]> segments = new ArrayList<Date[]>();
-        while(startDate.before(endDate)){
+        while(!startDate.after(endDate)){
             Date[] dates = new Date[2];
             dates[0] = startDate;
             dates[1] = DateUtil.offsetDay(startDate,days);
             segments.add(dates);
-            startDate = DateUtil.offsetDay(startDate,days + 1);
+            startDate = DateUtil.offsetDay(startDate,days);
         }
         return segments;
     };

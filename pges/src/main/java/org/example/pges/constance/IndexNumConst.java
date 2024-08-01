@@ -4,7 +4,7 @@ public class IndexNumConst {
     /**
      * 一次最多处理数量
      */
-    public static Integer MAX_COUNT = 1000;
+    public static Integer MAX_COUNT = 200;
 
     /**
      * 最大时间间隔

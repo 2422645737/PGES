@@ -54,7 +54,7 @@ public interface ESMapper extends BaseMapper<ESIndexPo> {
      * @return int
      */
 
-    int updateIndex(@Param("word") String word,@Param("ids") Long[] ids,@Param("code") String code);
+    int updateIndex(@Param("esIndex")ESIndexPo esIndexPo);
 
     /**
      * 插入索引
@@ -62,7 +62,7 @@ public interface ESMapper extends BaseMapper<ESIndexPo> {
      * @return int
      */
 
-    int insertIndex(@Param("esIndexPo") ESIndexPo esIndexPo);
+    int insertIndex(@Param("esIndexPos") List<ESIndexPo> esIndexPo);
 
     /**
      * 按照关键词检索
