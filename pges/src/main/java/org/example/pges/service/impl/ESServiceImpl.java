@@ -2,6 +2,7 @@ package org.example.pges.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.apdplat.word.WordSegmenter;
 import org.apdplat.word.segmentation.SegmentationAlgorithm;
 import org.apdplat.word.segmentation.Word;
@@ -62,6 +63,8 @@ public class ESServiceImpl implements ESService {
         Map<String,List<BusinessPO>> map = new HashMap<>(16);
         for (BusinessPO businessPO : byOffset) {
             String contentText = businessPO.getContentText();
+            System.out.println(contentText);
+            System.out.println(businessPO.getOutEmrDetailId());
             List<String> seg = WordSegmenter.seg(contentText).stream().map(Word::getText).collect(Collectors.toList());
             seg = seg.stream().distinct().collect(Collectors.toList());
             for (String word : seg) {
@@ -84,7 +87,10 @@ public class ESServiceImpl implements ESService {
                 firstInsert(key, list,insertList);
             }else{
                 //对于已经存在的key，需要判断数据库中的时间段是否包含当前时间段
-                List<ESIndexPo> byWordAndCode = esMapper.getByWordAndCode(key, NodeCodeConst.B1014);
+                QueryWrapper queryWrapper = new QueryWrapper();
+                queryWrapper.eq("code",NodeCodeConst.B1014);
+                queryWrapper.eq("word",key);
+                List<ESIndexPo> byWordAndCode = esMapper.selectList(queryWrapper);
                 
                 //处理所有日期在当前时间段之内的数据
                 for (ESIndexPo esIndexPo : byWordAndCode) {
@@ -93,15 +99,15 @@ public class ESServiceImpl implements ESService {
                         continue;
                     }
                     List<Long> businessIds = currentDateIntervalBussinessData.stream().map(BusinessPO::getOutEmrDetailId).collect(Collectors.toList());
-                    Long[] newIds = ESDataTypeUtils.mergeArray(esIndexPo.getIds(), ESDataTypeUtils.arrayListToArray(businessIds));
+                    Long[] newIds = ESDataTypeUtils.mergeArrayDistinct(esIndexPo.getIds(), ESDataTypeUtils.arrayListToArray(businessIds));
                     esIndexPo.setIds(newIds);
+                    //插入到更新集合中
+                    updateList.add(esIndexPo);
                     //排除掉已经处理的数据
                     if(null != currentDateIntervalBussinessData){
                         list.removeAll(currentDateIntervalBussinessData);
                     }
                 }
-                //对于某个关键词下的新数据，如果库中时间段包含他的时间，则直接进行扩展更新
-                updateList.addAll(byWordAndCode);
                 //如果不存在新数据对应的时间段，则采取扩展策略，将其插入到数据库中
                 if(CollUtil.isNotEmpty(list)){
                     firstInsert(key,list,insertList);
@@ -114,7 +120,7 @@ public class ESServiceImpl implements ESService {
         if(!CollectionUtils.isEmpty(collect)){
             businessMapper.updateEsFlag(collect);
         }
-        return map;
+        return null;
     }
 
     /**
@@ -123,19 +129,23 @@ public class ESServiceImpl implements ESService {
      * @param list
      */
     private void firstInsert(String key, List<BusinessPO> list,List<ESIndexPo> result) {
-        //分割时间段
-        List<Date[]> dateSegment = ESDateUtils.getDateSegment(list.get(0).getCreateTime(), list.get(list.size() - 1).getCreateTime());
-        //将数据按照时间段分组
-        for (Date[] dates : dateSegment) {
-            List<BusinessPO> businessPOS = list.stream().filter(e -> ESDateUtils.between(dates[0],dates[1],e.getCreateTime())).collect(Collectors.toList());
-            if(CollUtil.isEmpty(businessPOS)){
+        Map<Date[],List<Long>> map = new HashMap<>(16);
+        //初始化时间Map
+        for (BusinessPO businessPO : list) {
+            Date[] dateSegment = ESDateUtils.getDateSegment(businessPO.getCreateTime());
+            if(null == dateSegment){
                 continue;
             }
+            List<Long> orDefault = map.getOrDefault(dateSegment, new ArrayList<>());
+            orDefault.add(businessPO.getOutEmrDetailId());
+            map.put(dateSegment,orDefault);
+        }
+        for(Date[] date : map.keySet()){
             ESIndexPo esIndexPo = new ESIndexPo();
             esIndexPo.setWord(key);
-            esIndexPo.setIds(businessPOS.stream().map(BusinessPO::getOutEmrDetailId).toList().toArray(new Long[0]));
-            esIndexPo.setBeginTime(dates[0]);
-            esIndexPo.setEndTime(dates[1]);
+            esIndexPo.setIds(map.getOrDefault(date,new ArrayList<>()).toArray(new Long[0]));
+            esIndexPo.setBeginTime(date[0]);
+            esIndexPo.setEndTime(date[1]);
             esIndexPo.setCode(NodeCodeConst.B1014);
             esIndexPo.setId(IdGenerator.generateId());
             result.add(esIndexPo);

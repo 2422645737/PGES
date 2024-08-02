@@ -2,6 +2,8 @@ package org.example.pges.handler;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeException;
+import org.postgresql.util.PSQLException;
+import org.postgresql.util.PSQLState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,18 +66,16 @@ public class ArrayTypeHandler extends BaseTypeHandler<Object[]> {
         return getArray(cs.getArray(columnIndex));
     }
 
-    private Object[] getArray(Array array) {
+    private Long[] getArray(Array array) throws PSQLException {
 
         if (array == null) {
             return null;
         }
-
         try {
-            return (Object[]) array.getArray();
+            Long[] longObjects = (Long[]) array.getArray();
+            return longObjects;
         } catch (SQLException e) {
-            LOGGER.error("ArrayTypeHandler getArray SQLException",e);
+            throw new PSQLException("Unable to convert int8[] to long[]", PSQLState.DATA_TYPE_MISMATCH, e);
         }
-        return null;
-
     }
 }

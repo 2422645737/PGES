@@ -2,6 +2,7 @@ package org.example.pges.utils;
 
 import cn.hutool.core.collection.CollUtil;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -33,7 +34,21 @@ public class ESDataTypeUtils {
         System.arraycopy(arr2,0,newArray,arr1.length,arr2.length);
         return newArray;
     }
+    /**
+     * 合并两个数组
+     * @param arr1
+     * @param arr2
+     * @return {@link long[] }
+     */
 
+    public static Long[] mergeArrayDistinct(Long[] arr1,Long[] arr2){
+        Long[] longs = mergeArray(arr1, arr2);
+        if(longs == null){
+            return new Long[0];
+        }
+        //去重
+        return  Arrays.asList(longs).stream().distinct().toList().toArray(new Long[0]);
+    }
     /**
      * 将List<Long>转化为Long[]
      * @param list
