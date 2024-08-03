@@ -9,13 +9,30 @@ import java.util.List;
 
 @Data
 public class SearchParamDTO {
-    public List<String> text;
+    private List<String> text;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    public Date beginTime;
+    private Date beginTime;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    public Date endTime;
+    private Date endTime;
+
+    /**
+     * 关联关系
+     */
+    private String releation;
+
+    /**
+     * 每页数量
+     */
+    private int pageSize;
+
+    /**
+     * 页码
+     */
+    private int pageNum;
+
+
 }

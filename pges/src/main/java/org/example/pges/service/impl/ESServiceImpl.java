@@ -63,8 +63,6 @@ public class ESServiceImpl implements ESService {
         Map<String,List<BusinessPO>> map = new HashMap<>(16);
         for (BusinessPO businessPO : byOffset) {
             String contentText = businessPO.getContentText();
-            System.out.println(contentText);
-            System.out.println(businessPO.getOutEmrDetailId());
             List<String> seg = WordSegmenter.seg(contentText).stream().map(Word::getText).collect(Collectors.toList());
             seg = seg.stream().distinct().collect(Collectors.toList());
             for (String word : seg) {
@@ -79,8 +77,6 @@ public class ESServiceImpl implements ESService {
         List<ESIndexPo> updateList = new ArrayList<>();
         for(String key : map.keySet()){
             List<BusinessPO> list = map.get(key);
-            //将list按照创建时间排序
-            list = list.stream().sorted(Comparator.comparing(BusinessPO::getCreateTime)).collect(Collectors.toList());
             //判断当前key是否存在
             int hasIndex = esMapper.hasIndex(key, NodeCodeConst.B1014);
             if(hasIndex == 0){
@@ -104,9 +100,7 @@ public class ESServiceImpl implements ESService {
                     //插入到更新集合中
                     updateList.add(esIndexPo);
                     //排除掉已经处理的数据
-                    if(null != currentDateIntervalBussinessData){
-                        list.removeAll(currentDateIntervalBussinessData);
-                    }
+                    list.removeAll(currentDateIntervalBussinessData);
                 }
                 //如果不存在新数据对应的时间段，则采取扩展策略，将其插入到数据库中
                 if(CollUtil.isNotEmpty(list)){
@@ -161,16 +155,15 @@ public class ESServiceImpl implements ESService {
     @Override
     public List<BusinessPO> search(SearchParamDTO searchParamDTO) {
         List<Object> objects = esMapper.searchByParam(searchParamDTO);
-        Set<Long> outEmrDetailsIds = new HashSet<>();
+        Set<Long> outEmrDetailsIdSet = new HashSet<>();
         if(!CollectionUtils.isEmpty(objects)){
             for (Object object : objects) {
                 Long[] ids = (Long[]) object;
-                outEmrDetailsIds.addAll(Arrays.stream(ids).collect(Collectors.toList()));
+                outEmrDetailsIdSet.addAll(Arrays.stream(ids).collect(Collectors.toList()));
             }
         }
-        outEmrDetailsIds.stream().distinct().collect(Collectors.toList());
         //通过明细id直接检索数据
-        List<BusinessPO> businessPOS = businessMapper.searchByOutEmrDetailIds(outEmrDetailsIds.stream().toList());
+        List<BusinessPO> businessPOS = businessMapper.searchByOutEmrDetailIds(outEmrDetailsIdSet.stream().toList());
         return businessPOS;
     }
 

@@ -25,9 +25,9 @@
     </insert>
 
     <select id="searchByParam" resultType="object">
-        select ids from me.es_index where word in
-        <foreach collection="param.text" open="(" separator="," close=")" item="word">
-            #{word}
+        select ids from me.es_index where
+        <foreach collection="param.text" separator="or" item="word">
+            (word like concat('%',#{word},'%'))
         </foreach>
         <if test="param.beginTime != null">
             and begin_time &gt;= #{param.beginTime}
