@@ -34,8 +34,18 @@ public class ESController {
         return esService.process();
     }
 
-    @PostMapping("/search")
-    public List<BusinessPO> search(@RequestBody SearchParamDTO searchParamDTO) {
-        return esService.search(searchParamDTO);
+    @PostMapping("/searchAll")
+    public List<BusinessPO> searchAll(@RequestBody SearchParamDTO searchParamDTO) {
+        return esService.searchAll(searchParamDTO);
+    }
+
+    @PostMapping("/searchByPage")
+    public List<BusinessPO> searchByPage(@RequestBody SearchParamDTO searchParamDTO) {
+        return esService.searchByPage(searchParamDTO);
+    }
+
+    @PostMapping("/optimize")
+    public void optimize() {
+        esService.optimize();
     }
 }

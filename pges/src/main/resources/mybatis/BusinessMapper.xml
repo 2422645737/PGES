@@ -6,7 +6,7 @@
     </select>
 
     <update id="updateEsFlag">
-        update me.business set es_flag = '1' where out_visit_record_id in
+        update me.business set es_flag = '1' where out_emr_detail_id in
         <foreach collection="ids" separator="," open="(" close=")" item="id">
             #{id}
         </foreach>

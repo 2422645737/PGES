@@ -46,11 +46,10 @@ public interface ESMapper extends BaseMapper<ESIndexPo> {
      */
 
     List<ESIndexPo> getByWordAndCode(@Param("word") String word, @Param("code") String code);
+
     /**
      * 更新索引
-     * @param word
-     * @param ids
-     * @param code
+     * @param esIndexPo
      * @return int
      */
 
@@ -70,5 +69,12 @@ public interface ESMapper extends BaseMapper<ESIndexPo> {
      * @return {@link Object }
      */
 
-    List<Object> searchByParam(@Param("param")SearchParamDTO searchParamDTO);
+    List<BusinessPO> searchByParam(@Param("param")SearchParamDTO searchParamDTO);
+
+    /**
+     * 查询可以进行合并的word
+     * @return {@link List }<{@link String }>
+     */
+
+    List<String> getLeastIndex();
 }

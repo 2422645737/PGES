@@ -2,12 +2,14 @@ package org.example.pges.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.NumberUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.apdplat.word.WordSegmenter;
 import org.apdplat.word.segmentation.SegmentationAlgorithm;
 import org.apdplat.word.segmentation.Word;
 import org.example.pges.constance.IndexNumConst;
 import org.example.pges.constance.NodeCodeConst;
+import org.example.pges.constance.NumConst;
 import org.example.pges.dao.BusinessMapper;
 import org.example.pges.dao.ESMapper;
 import org.example.pges.entity.TextDTO;
@@ -21,6 +23,7 @@ import org.example.pges.utils.ESDateUtils;
 import org.example.pges.utils.IdGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.NumberUtils;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -59,6 +62,9 @@ public class ESServiceImpl implements ESService {
     public Object process() {
         //获取待处理的病历数据
         List<BusinessPO> byOffset = businessMapper.findByOffset(IndexNumConst.MAX_COUNT);
+        if(CollUtil.isEmpty(byOffset)){
+            return null;
+        }
         //存储key -> id集合
         Map<String,List<BusinessPO>> map = new HashMap<>(16);
         for (BusinessPO businessPO : byOffset) {
@@ -110,10 +116,11 @@ public class ESServiceImpl implements ESService {
         }
         esMapper.insert(insertList);
         esMapper.updateById(updateList);
-        List<Long> collect = byOffset.stream().map(BusinessPO::getOutVisitRecordId).collect(Collectors.toList());
+        List<Long> collect = byOffset.stream().map(BusinessPO::getOutEmrDetailId).collect(Collectors.toList());
         if(!CollectionUtils.isEmpty(collect)){
             businessMapper.updateEsFlag(collect);
         }
+        process();
         return null;
     }
 
@@ -124,7 +131,7 @@ public class ESServiceImpl implements ESService {
      */
     private void firstInsert(String key, List<BusinessPO> list,List<ESIndexPo> result) {
         Map<Date[],List<Long>> map = new HashMap<>(16);
-        //初始化时间Map
+        //初始化时间Map,用于设置某个时间段内对应的所有业务id
         for (BusinessPO businessPO : list) {
             Date[] dateSegment = ESDateUtils.getDateSegment(businessPO.getCreateTime());
             if(null == dateSegment){
@@ -153,18 +160,21 @@ public class ESServiceImpl implements ESService {
      */
 
     @Override
-    public List<BusinessPO> search(SearchParamDTO searchParamDTO) {
-        List<Object> objects = esMapper.searchByParam(searchParamDTO);
-        Set<Long> outEmrDetailsIdSet = new HashSet<>();
-        if(!CollectionUtils.isEmpty(objects)){
-            for (Object object : objects) {
-                Long[] ids = (Long[]) object;
-                outEmrDetailsIdSet.addAll(Arrays.stream(ids).collect(Collectors.toList()));
-            }
-        }
-        //通过明细id直接检索数据
-        List<BusinessPO> businessPOS = businessMapper.searchByOutEmrDetailIds(outEmrDetailsIdSet.stream().toList());
-        return businessPOS;
+    public List<BusinessPO> searchAll(SearchParamDTO searchParamDTO) {
+        //处理时间段
+        List<BusinessPO> businessPOS = esMapper.searchByParam(searchParamDTO);
+        return null;
+    }
+
+    /**
+     * 分页查询
+     * @param searchParamDTO
+     * @return {@link List }<{@link BusinessPO }>
+     */
+
+    @Override
+    public List<BusinessPO> searchByPage(SearchParamDTO searchParamDTO) {
+        return null;
     }
 
     @Override
@@ -175,9 +185,62 @@ public class ESServiceImpl implements ESService {
         WordSegementDTO MinimalWordCount = new WordSegementDTO();
         MinimalWordCount.setWordAlgorithm(SegmentationAlgorithm.MinimalWordCount.getDes());
         MinimalWordCount.setWords(seg.stream().map(Word::getText).collect(Collectors.toList()));
-
-
         result.add(MinimalWordCount);
         return result;
     }
+
+    @Override
+    public void optimize() {
+        //对于已经分好时间段的数组，如果占用长度过小，则进行合并优化
+        List<String> leastIndex = esMapper.getLeastIndex();
+        if(leastIndex == null){
+            return;
+        }
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.eq("code",NodeCodeConst.B1014);
+        queryWrapper.in("word",leastIndex);
+        List<ESIndexPo> list = esMapper.selectList(queryWrapper);
+        if(CollUtil.isEmpty(list)){
+            return;
+        }
+        //分组出相同word
+        Map<String, List<ESIndexPo>> wordMap = list.stream().collect(Collectors.groupingBy(ESIndexPo::getWord));
+        List<Long> removeIds = new ArrayList<>();
+        List<ESIndexPo> updateList = new ArrayList<>();
+        for(String word : wordMap.keySet()){
+            List<ESIndexPo> esIndexPos = wordMap.get(word);
+            //按照时间排序
+            esIndexPos = esIndexPos.stream().sorted(Comparator.comparing(ESIndexPo::getBeginTime)).collect(Collectors.toList());
+            mergeIndex(esIndexPos,removeIds);
+            //最终得到的是需要进行update操作的数据
+            updateList.addAll(esIndexPos);
+        }
+        esMapper.updateById(updateList);
+        if(CollUtil.isNotEmpty(removeIds)){
+            esMapper.deleteByIds(removeIds);
+        }
+    }
+
+    /**
+     * 索引合并
+     */
+
+    private void mergeIndex(List<ESIndexPo> esIndexPoList,List<Long> removedIds){
+        if(esIndexPoList.size() < NumConst.INT_2){
+            return;
+        }
+        ESIndexPo first = esIndexPoList.get(0);
+        ESIndexPo second = esIndexPoList.get(1);
+        if(first.getIds().length + second.getIds().length < IndexNumConst.MAX_LENGTH){
+            Long[] firstIds = first.getIds();
+            Long[] secondIds = second.getIds();
+            Long[] ids = ESDataTypeUtils.mergeArrayDistinct(firstIds, secondIds);
+            second.setIds(ids);
+            second.setBeginTime(first.getBeginTime());
+            removedIds.add(first.getId());
+            esIndexPoList.remove(0);
+            mergeIndex(esIndexPoList,removedIds);
+        }
+    }
+
 }

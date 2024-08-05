@@ -62,4 +62,5 @@ public class ESDataTypeUtils {
         return list.toArray(new Long[0]);
     }
 
+
 }

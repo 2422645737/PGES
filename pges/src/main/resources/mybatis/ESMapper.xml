@@ -24,16 +24,37 @@
         </foreach>
     </insert>
 
-    <select id="searchByParam" resultType="object">
-        select ids from me.es_index where
-        <foreach collection="param.text" separator="or" item="word">
-            (word like concat('%',#{word},'%'))
-        </foreach>
-        <if test="param.beginTime != null">
-            and begin_time &gt;= #{param.beginTime}
-        </if>
-        <if test="param.endTime != null">
-            and end_time &lt;= #{param.endTime}
-        </if>
+    <select id="searchByParam" resultType="org.example.pges.entity.po.BusinessPO">
+        select bus.* from me.business bus where out_emr_detail_id in (
+            select unnest(ids) as ids from me.es_index idx
+            where
+            <foreach collection="param.text" separator="or" item="word">
+                (idx.word like concat('%',#{word},'%'))
+            </foreach>
+            and (
+                (idx.begin_time &lt;= #{param.beginTime} and idx.end_time &gt;= #{param.beginTime})
+                or
+                (idx.end_time &lt;= #{param.endTime} and idx.begin_time &gt;= #{param.endTime})
+                or
+                (idx.begin_time &gt;= #{param.beginTime} and idx.end_time &lt; #{param.endTime})
+                )
+        )
+        and bus.create_time &gt;= #{param.beginTime}
+        and bus.create_time &lt;= #{param.endTime}
+    </select>
+
+
+    <select id="getLeastIndex" resultType="java.lang.String">
+        SELECT word
+        FROM
+        (
+            SELECT word,MAX ( array_length( ids, 1 ) ) AS max_length,
+                        SUM ( array_length( ids, 1 ) ) AS sum_length,
+                        COUNT ( word ) AS word_count
+            FROM me.es_index
+            GROUP BY word
+        ) AS subquery
+        WHERE word_count >= 2 AND max_length &lt;= 1000
+        ORDER BY sum_length limit 500
     </select>
 </mapper>

@@ -11,13 +11,36 @@ import java.util.List;
 public interface ESService {
     List<String> insert(TextDTO textDTO);
 
+    /**
+     * 数据处理
+     * @return {@link Object }
+     */
+
     Object process();
 
-    List<BusinessPO> search(SearchParamDTO searchParamDTO);
+    /**
+     * 检索全部
+     * @param searchParamDTO
+     * @return {@link List }<{@link BusinessPO }>
+     */
+
+    List<BusinessPO> searchAll(SearchParamDTO searchParamDTO);
+    /**
+     * 分页检索
+     * @param searchParamDTO
+     * @return {@link List }<{@link BusinessPO }>
+     */
+
+    List<BusinessPO> searchByPage(SearchParamDTO searchParamDTO);
 
     /**
      * 测试函数
      */
 
     List<WordSegementDTO> test(String word);
+
+    /**
+     * 数据库优化
+     */
+    void optimize();
 }
