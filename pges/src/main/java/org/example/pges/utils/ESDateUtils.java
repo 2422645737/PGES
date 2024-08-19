@@ -53,7 +53,7 @@ public class ESDateUtils {
     };
 
     public static boolean between(Date startDate,Date endDate,Date date){
-        return date.after(startDate) && date.before(endDate);
+        return !(date.before(startDate) || date.after(endDate));
     }
 
     /**

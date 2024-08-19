@@ -161,9 +161,11 @@ public class ESServiceImpl implements ESService {
 
     @Override
     public List<BusinessPO> searchAll(SearchParamDTO searchParamDTO) {
+        //检索条件处理
+        //searchParamDTO.setText(splitSearchWord(searchParamDTO.getText()));
         //处理时间段
         List<BusinessPO> businessPOS = esMapper.searchByParam(searchParamDTO);
-        return null;
+        return businessPOS;
     }
 
     /**
@@ -242,5 +244,25 @@ public class ESServiceImpl implements ESService {
             mergeIndex(esIndexPoList,removedIds);
         }
     }
+
+    /**
+     * 对检索条件进行分词处理
+     * @param wordList
+     */
+
+    private List<String> splitSearchWord(List<String> wordList){
+        if(CollUtil.isEmpty(wordList)){
+            return null;
+        }
+        Set<String> wordSet = new HashSet<>();
+        wordList.forEach(word -> {
+            List<Word> seg = WordSegmenter.seg(word);
+            wordSet.addAll(seg.stream().map(Word::getText).collect(Collectors.toList()));
+        });
+        //取出数据库中与其关联度最高的文本
+
+        return wordSet.stream().toList();
+    }
+
 
 }

@@ -20,10 +20,10 @@ import java.util.Date;
 @Data
 @TableName("business")
 public class BusinessPO {
-
+    @TableId
     private long outEmrDetailId;
 
-    @TableId
+
     private long outVisitRecordId;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
