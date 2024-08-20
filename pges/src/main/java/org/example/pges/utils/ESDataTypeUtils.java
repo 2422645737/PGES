@@ -35,7 +35,7 @@ public class ESDataTypeUtils {
         return newArray;
     }
     /**
-     * 合并两个数组
+     * 合并两个数组(包含去重逻辑)
      * @param arr1
      * @param arr2
      * @return {@link long[] }

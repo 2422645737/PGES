@@ -15,5 +15,10 @@ public class IndexNumConst {
     /**
      * 每个ids最大长度
      */
-    public static Integer MAX_LENGTH = 1000;
+    public static Integer MAX_LENGTH = 5000;
+
+    /**
+     * 每个ids最小长度（如果小于这个长度，则会进行合并操作）
+     */
+    public static Integer MIN_LENGTH = 1000;
 }

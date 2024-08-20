@@ -72,9 +72,16 @@ public interface ESMapper extends BaseMapper<ESIndexPo> {
     List<BusinessPO> searchByParam(@Param("param")SearchParamDTO searchParamDTO);
 
     /**
-     * 查询可以进行合并的word
+     * 查询 出现次数 > 3 and 最大id数量 <= 1000 的word，对于此类word，可以对其进行合并
      * @return {@link List }<{@link String }>
      */
 
-    List<String> getLeastIndex();
+    List<String> getLeastIndex(Integer minSize);
+
+    /**
+     * 获取id数量过多的索引
+     * @return {@link List }<{@link ESIndexPo }>
+     */
+
+    List<ESIndexPo> getMostIndex(Integer maxSize);
 }

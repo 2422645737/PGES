@@ -54,7 +54,13 @@
             FROM me.es_index
             GROUP BY word
         ) AS subquery
-        WHERE word_count >= 2 AND max_length &lt;= 1000
-        ORDER BY sum_length limit 500
+        WHERE word_count >= 3 AND max_length &lt;= #{minSize}
+        ORDER BY sum_length limit 2000
+    </select>
+
+    <select id="getMostIndex" resultType="org.example.pges.entity.po.ESIndexPo">
+        SELECT id,word,ids
+        FROM me.es_index where array_length( ids, 1 ) >= #{maxSize}
+        order by array_length( ids, 1 ) DESC limit 200
     </select>
 </mapper>
