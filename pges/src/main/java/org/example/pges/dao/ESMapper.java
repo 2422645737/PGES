@@ -73,6 +73,7 @@ public interface ESMapper extends BaseMapper<ESIndexPo> {
 
     /**
      * 查询 出现次数 > 3 and 最大id数量 <= 1000 的word，对于此类word，可以对其进行合并
+     * @param minSize
      * @return {@link List }<{@link String }>
      */
 
@@ -80,8 +81,9 @@ public interface ESMapper extends BaseMapper<ESIndexPo> {
 
     /**
      * 获取id数量过多的索引
+     * @param maxSize
      * @return {@link List }<{@link ESIndexPo }>
      */
 
-    List<ESIndexPo> getMostIndex(Integer maxSize);
+    List<Long> getMostIndex(Integer maxSize);
 }

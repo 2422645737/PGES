@@ -58,8 +58,8 @@
         ORDER BY sum_length limit 2000
     </select>
 
-    <select id="getMostIndex" resultType="org.example.pges.entity.po.ESIndexPo">
-        SELECT id,word,ids
+    <select id="getMostIndex" resultType="java.lang.Long">
+        SELECT id
         FROM me.es_index where array_length( ids, 1 ) >= #{maxSize}
         order by array_length( ids, 1 ) DESC limit 200
     </select>

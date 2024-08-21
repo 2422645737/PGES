@@ -1,8 +1,12 @@
 package org.example.pges.utils;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -52,7 +56,7 @@ public class ESDataTypeUtils {
     /**
      * 将List<Long>转化为Long[]
      * @param list
-     * @return {@link long[] }
+     * @return {@link Long[] }
      */
 
     public static Long[] arrayListToArray(List<Long> list){
@@ -62,5 +66,28 @@ public class ESDataTypeUtils {
         return list.toArray(new Long[0]);
     }
 
+    /**
+     * 将数组分段，每一段的最大长度为maxSize
+     * @param array
+     * @param maxSize
+     * @return {@link List }<{@link Long[] }>
+     */
 
+    public static List<Long[]> splitArray(Long[] array,int maxSize){
+        List<Long[]> result = new ArrayList<>();
+        if(array.length < maxSize){
+            result.add(array);
+            return result;
+        }
+        int index = 0;
+        while(index < array.length){
+            if(index + maxSize > array.length){
+                maxSize = array.length - index;
+            }
+            Long[] item = Arrays.copyOfRange(array, index, index + maxSize);
+            index += maxSize;
+            result.add(item);
+        }
+        return result;
+    }
 }

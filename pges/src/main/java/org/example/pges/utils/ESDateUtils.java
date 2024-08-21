@@ -78,4 +78,30 @@ public class ESDateUtils {
         }
         return null;
     }
+    /**
+     * 将某个时间段分割成count个时间段
+     * @param beginTime
+     * @param endTime
+     * @param count
+     * @return {@link Date[] }
+     */
+
+    public static List<Date[]> splitDate(Date beginTime,Date endTime,int count){
+        Long between = DateUtil.betweenDay(beginTime,endTime,true);
+        //不能将10天拆成12份，上限就是两个日期之间的时间间隔
+        if(between.intValue() < count){
+            count = between.intValue();
+        }
+        int unit = between.intValue() / count;
+        List<Date[]> result = new ArrayList<>(4);
+        while(beginTime.before(endTime)){
+            Date[] item = new Date[2];
+            item[0] = beginTime;
+            item[1] = DateUtil.offsetDay(beginTime,unit);
+            beginTime = DateUtil.offsetDay(beginTime,unit);
+            result.add(item);
+        }
+        return result;
+    }
+
 }

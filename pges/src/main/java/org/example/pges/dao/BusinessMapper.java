@@ -32,4 +32,12 @@ public interface BusinessMapper extends BaseMapper<BusinessPO> {
      */
 
     List<BusinessPO> searchByOutEmrDetailIds(List<Long> ids);
+
+    /**
+     * 根据病历明细id直接检索数据(只检索主键和创建时间，提高速度)
+     * @param ids
+     * @return {@link List }<{@link BusinessPO }>
+     */
+
+    List<BusinessPO> searchTimeByOutEmrDetailIds(List<Long> ids);
 }

@@ -194,7 +194,7 @@ public class ESServiceImpl implements ESService {
     @Override
     public void optimize() {
         //对于已经分好时间段的数组，如果占用长度过小，则进行合并优化
-        List<String> leastIndex = esMapper.getLeastIndex();
+        List<String> leastIndex = esMapper.getLeastIndex(IndexNumConst.MIN_LENGTH);
         if(leastIndex == null){
             return;
         }

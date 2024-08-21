@@ -21,4 +21,9 @@ public class IndexNumConst {
      * 每个ids最小长度（如果小于这个长度，则会进行合并操作）
      */
     public static Integer MIN_LENGTH = 1000;
+
+    /**
+     * 数据库条数最大限制
+     */
+    public static Integer DATABASE_MAX_LIMIT = 15000;
 }
