@@ -13,18 +13,18 @@
         update me.es_index set ids = #{esIndex.ids} where id = #{esIndex.id}
     </update>
 
-    <select id="getByWordAndCode" resultType="org.example.pges.entity.po.ESIndexPo">
+    <select id="getByWordAndCode" resultType="org.example.pges.entity.po.ESIndex">
         select * from me.es_index where word = #{word} and code = #{code}
     </select>
 
     <insert id="insertIndex">
         insert into me.es_index (word,code,begin_time,end_time,ids,id) values
-        <foreach collection="esIndexPos" separator=","  item="esIndexPo">
-            (#{esIndexPo.word},#{esIndexPo.code},#{esIndexPo.beginTime},#{esIndexPo.endTime},#{esIndexPo.ids},#{esIndexPo.id})
+        <foreach collection="esIndexPos" separator=","  item="esIndex">
+            (#{esIndex.word},#{esIndex.code},#{esIndex.beginTime},#{esIndex.endTime},#{esIndex.ids},#{esIndex.id})
         </foreach>
     </insert>
 
-    <select id="searchByParam" resultType="org.example.pges.entity.po.BusinessPO">
+    <select id="searchByParam" resultType="org.example.pges.entity.po.Document">
         select bus.* from me.business bus where out_emr_detail_id in (
             select unnest(ids) as ids from me.es_index idx
             where

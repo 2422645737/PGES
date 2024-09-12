@@ -3,9 +3,9 @@ package org.example.pges.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.example.pges.entity.dto.SearchParamDTO;
-import org.example.pges.entity.po.BusinessPO;
-import org.example.pges.entity.po.ESIndexPo;
+import org.example.pges.entity.dto.SearchParam;
+import org.example.pges.entity.po.Document;
+import org.example.pges.entity.po.ESIndex;
 
 import java.util.List;
 
@@ -19,11 +19,12 @@ import java.util.List;
  */
 
 @Mapper
-public interface ESMapper extends BaseMapper<ESIndexPo> {
+public interface ESMapper extends BaseMapper<ESIndex> {
 
     /**
      * 判断是否包含单词的index
-     * @param words
+     * @param word
+     * @param code
      * @return int
      */
 
@@ -45,31 +46,31 @@ public interface ESMapper extends BaseMapper<ESIndexPo> {
      * @return {@link List }<{@link Long }>
      */
 
-    List<ESIndexPo> getByWordAndCode(@Param("word") String word, @Param("code") String code);
+    List<ESIndex> getByWordAndCode(@Param("word") String word, @Param("code") String code);
 
     /**
      * 更新索引
-     * @param esIndexPo
+     * @param esIndex
      * @return int
      */
 
-    int updateIndex(@Param("esIndex")ESIndexPo esIndexPo);
+    int updateIndex(@Param("esIndex") ESIndex esIndex);
 
     /**
      * 插入索引
-     * @param esIndexPo
+     * @param esIndex
      * @return int
      */
 
-    int insertIndex(@Param("esIndexPos") List<ESIndexPo> esIndexPo);
+    int insertIndex(@Param("esIndexPos") List<ESIndex> esIndex);
 
     /**
      * 按照关键词检索
-     * @param searchParamDTO
+     * @param searchParam
      * @return {@link Object }
      */
 
-    List<BusinessPO> searchByParam(@Param("param")SearchParamDTO searchParamDTO);
+    List<Document> searchByParam(@Param("param") SearchParam searchParam);
 
     /**
      * 查询 出现次数 > 3 and 最大id数量 <= 1000 的word，对于此类word，可以对其进行合并
@@ -82,7 +83,7 @@ public interface ESMapper extends BaseMapper<ESIndexPo> {
     /**
      * 获取id数量过多的索引
      * @param maxSize
-     * @return {@link List }<{@link ESIndexPo }>
+     * @return {@link List }<{@link ESIndex }>
      */
 
     List<Long> getMostIndex(Integer maxSize);

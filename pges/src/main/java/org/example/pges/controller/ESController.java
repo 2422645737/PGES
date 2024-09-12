@@ -2,11 +2,10 @@ package org.example.pges.controller;
 
 
 import org.example.pges.entity.TextDTO;
-import org.example.pges.entity.dto.SearchParamDTO;
-import org.example.pges.entity.dto.WordSegementDTO;
-import org.example.pges.entity.po.BusinessPO;
-import org.example.pges.service.ESIndexOptimizationService;
+import org.example.pges.entity.dto.SearchParam;
+import org.example.pges.entity.po.Document;
 import org.example.pges.service.ESService;
+import org.example.pges.service.impl.IndexOptimizeHandler;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -21,7 +20,7 @@ public class ESController {
     private ESService esService;
 
     @Resource
-    private ESIndexOptimizationService esIndexOptimizationService;
+    private IndexOptimizeHandler indexOptimizeHandler;
 
     @PostMapping("/insert")
     public List<String> index(@RequestBody TextDTO textDTO) {
@@ -30,7 +29,7 @@ public class ESController {
 
     @PostMapping("/test")
     public void test() {
-        esIndexOptimizationService.indexSplitStragegy();
+        indexOptimizeHandler.indexSplitStragegy();
     }
 
     @PostMapping("/process")
@@ -39,13 +38,13 @@ public class ESController {
     }
 
     @PostMapping("/searchAll")
-    public List<BusinessPO> searchAll(@RequestBody SearchParamDTO searchParamDTO) {
-        return esService.searchAll(searchParamDTO);
+    public List<Document> searchAll(@RequestBody SearchParam searchParam) {
+        return esService.searchAll(searchParam);
     }
 
     @PostMapping("/searchByPage")
-    public List<BusinessPO> searchByPage(@RequestBody SearchParamDTO searchParamDTO) {
-        return esService.searchByPage(searchParamDTO);
+    public List<Document> searchByPage(@RequestBody SearchParam searchParam) {
+        return esService.searchByPage(searchParam);
     }
 
     @PostMapping("/optimize")

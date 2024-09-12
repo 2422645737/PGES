@@ -1,9 +1,9 @@
 package org.example.pges.service;
 
 import org.example.pges.entity.TextDTO;
-import org.example.pges.entity.dto.SearchParamDTO;
-import org.example.pges.entity.dto.WordSegementDTO;
-import org.example.pges.entity.po.BusinessPO;
+import org.example.pges.entity.dto.SearchParam;
+import org.example.pges.entity.dto.WordSegement;
+import org.example.pges.entity.po.Document;
 
 import java.util.List;
 
@@ -20,24 +20,24 @@ public interface ESService {
 
     /**
      * 检索全部
-     * @param searchParamDTO
-     * @return {@link List }<{@link BusinessPO }>
+     * @param searchParam
+     * @return {@link List }<{@link Document }>
      */
 
-    List<BusinessPO> searchAll(SearchParamDTO searchParamDTO);
+    List<Document> searchAll(SearchParam searchParam);
     /**
      * 分页检索
-     * @param searchParamDTO
-     * @return {@link List }<{@link BusinessPO }>
+     * @param searchParam
+     * @return {@link List }<{@link Document }>
      */
 
-    List<BusinessPO> searchByPage(SearchParamDTO searchParamDTO);
+    List<Document> searchByPage(SearchParam searchParam);
 
     /**
      * 测试函数
      */
 
-    List<WordSegementDTO> test(String word);
+    List<WordSegement> test(String word);
 
     /**
      * 数据库优化

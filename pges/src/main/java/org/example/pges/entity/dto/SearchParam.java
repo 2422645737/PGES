@@ -8,8 +8,10 @@ import java.util.Date;
 import java.util.List;
 
 @Data
-public class SearchParamDTO {
-    private List<String> text;
+public class SearchParam {
+    private String text;
+
+
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")

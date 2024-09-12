@@ -5,11 +5,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.example.pges.constance.IndexNumConst;
 import org.example.pges.constance.NodeCodeConst;
 import org.example.pges.constance.NumConst;
-import org.example.pges.dao.BusinessMapper;
+import org.example.pges.dao.DocumentMapper;
 import org.example.pges.dao.ESMapper;
-import org.example.pges.entity.po.BusinessPO;
-import org.example.pges.entity.po.ESIndexPo;
-import org.example.pges.service.ESIndexOptimizationService;
+import org.example.pges.entity.po.Document;
+import org.example.pges.entity.po.ESIndex;
 import org.example.pges.utils.ESDataTypeUtils;
 import org.example.pges.utils.ESDateUtils;
 import org.example.pges.utils.IdGenerator;
@@ -29,17 +28,17 @@ import java.util.stream.Collectors;
  */
 
 @Service
-public class ESIndexOptimizationServiceImpl implements ESIndexOptimizationService{
+public class IndexOptimizeHandler{
     @Resource
     private ESMapper esMapper;
 
     @Resource
-    private BusinessMapper businessMapper;
+    private DocumentMapper documentMapper;
 
     /**
      * 索引合并策略（针对同一词汇大量出现的优化）
      */
-    @Override
+
     public void indexMergeStrategy() {
         List<String> leastIndex = esMapper.getLeastIndex(IndexNumConst.MIN_LENGTH);
         if(leastIndex == null){
@@ -48,18 +47,18 @@ public class ESIndexOptimizationServiceImpl implements ESIndexOptimizationServic
         QueryWrapper queryWrapper = new QueryWrapper();
         queryWrapper.eq("code", NodeCodeConst.B1014);
         queryWrapper.in("word",leastIndex);
-        List<ESIndexPo> list = esMapper.selectList(queryWrapper);
+        List<ESIndex> list = esMapper.selectList(queryWrapper);
         //分组出相同word
-        Map<String, List<ESIndexPo>> wordMap = list.stream().collect(Collectors.groupingBy(ESIndexPo::getWord));
+        Map<String, List<ESIndex>> wordMap = list.stream().collect(Collectors.groupingBy(ESIndex::getWord));
         List<Long> removeIds = new ArrayList<>();
-        List<ESIndexPo> updateList = new ArrayList<>();
+        List<ESIndex> updateList = new ArrayList<>();
         for(String word : wordMap.keySet()){
-            List<ESIndexPo> esIndexPos = wordMap.get(word);
+            List<ESIndex> esIndices = wordMap.get(word);
             //按照时间排序
-            esIndexPos = esIndexPos.stream().sorted(Comparator.comparing(ESIndexPo::getBeginTime)).collect(Collectors.toList());
-            mergeIndex(esIndexPos,removeIds);
+            esIndices = esIndices.stream().sorted(Comparator.comparing(ESIndex::getBeginTime)).collect(Collectors.toList());
+            mergeIndex(esIndices,removeIds);
             //最终得到的是需要进行update操作的数据
-            updateList.addAll(esIndexPos);
+            updateList.addAll(esIndices);
         }
         esMapper.updateById(updateList);
         if(CollUtil.isNotEmpty(removeIds)){
@@ -74,37 +73,37 @@ public class ESIndexOptimizationServiceImpl implements ESIndexOptimizationServic
      *       word1 (2023-02-15 ~ 2023-02-20) 2001,2002,2003,...(2000个)
      */
 
-    @Override
+
     public void indexSplitStragegy() {
         //1、查询出体积过大的索引
         List<Long> idList = esMapper.getMostIndex(IndexNumConst.MAX_LENGTH);
         if(CollUtil.isEmpty(idList)){
             return;
         }
-        List<ESIndexPo> mostIndex = esMapper.selectBatchIds(idList);
-        List<ESIndexPo> insertList = new ArrayList<>();
+        List<ESIndex> mostIndex = esMapper.selectBatchIds(idList);
+        List<ESIndex> insertList = new ArrayList<>();
         List<Long> removeIdList = new ArrayList<>();
-        for (ESIndexPo index : mostIndex) {
+        for (ESIndex index : mostIndex) {
             int length = index.getIds().length;
             int count = (length / IndexNumConst.MAX_LENGTH) + 1;
             List<Date[]> dates = ESDateUtils.splitDate(index.getBeginTime(), index.getEndTime(), count);
 
-            List<BusinessPO> entityList = new ArrayList<>();
+            List<Document> entityList = new ArrayList<>();
             //数量超过数据库最大限制时，采用分段查询
             List<Long[]> ids = ESDataTypeUtils.splitArray(index.getIds(), IndexNumConst.DATABASE_MAX_LIMIT);
             for(int i = 0;i < ids.size();i++){
-                List<BusinessPO> businessPOS = businessMapper.searchTimeByOutEmrDetailIds(Arrays.stream(ids.get(i)).toList());
-                entityList.addAll(businessPOS);
+                List<Document> documents = documentMapper.searchTimeByOutEmrDetailIds(Arrays.stream(ids.get(i)).toList());
+                entityList.addAll(documents);
             }
             for (Date[] date : dates) {
                 List<Long> collect = entityList.stream()
                         .filter(e -> ESDateUtils.between(date[0], date[1], e.getCreateTime()))
-                        .map(BusinessPO::getOutEmrDetailId)
+                        .map(Document::getOutEmrDetailId)
                         .collect(Collectors.toList());
                 if(CollUtil.isEmpty(collect)){
                     continue;
                 }
-                ESIndexPo indexPo = new ESIndexPo()
+                ESIndex indexPo = new ESIndex()
                         .setWord(index.getWord())
                         .setIds(ESDataTypeUtils.arrayListToArray(collect))
                         .setCode(index.getCode())
@@ -130,27 +129,27 @@ public class ESIndexOptimizationServiceImpl implements ESIndexOptimizationServic
      * 合并中：[1000,2000],[3000],[100,200,300]
      *
      * 合并后：3000,3000,600
-     * @param esIndexPoList 待合并集合
+     * @param esIndexList 待合并集合
      * @param removedIds 合并完成之后，需要删除的集合
      */
 
-    private void mergeIndex(List<ESIndexPo> esIndexPoList,List<Long> removedIds){
-        if(esIndexPoList.size() < NumConst.INT_2){
+    private void mergeIndex(List<ESIndex> esIndexList, List<Long> removedIds){
+        if(esIndexList.size() < NumConst.INT_2){
             return;
         }
-        if(esIndexPoList.get(0).getIds().length >= IndexNumConst.MAX_LENGTH){
-            esIndexPoList.remove(0);
-            mergeIndex(esIndexPoList,removedIds);
+        if(esIndexList.get(0).getIds().length >= IndexNumConst.MAX_LENGTH){
+            esIndexList.remove(0);
+            mergeIndex(esIndexList,removedIds);
         }
-        ESIndexPo first = esIndexPoList.get(0);
-        ESIndexPo second = esIndexPoList.get(1);
+        ESIndex first = esIndexList.get(0);
+        ESIndex second = esIndexList.get(1);
         if(first.getIds().length + second.getIds().length <= IndexNumConst.MAX_LENGTH){
             Long[] ids = ESDataTypeUtils.mergeArrayDistinct(first.getIds(), second.getIds());
             second.setIds(ids);
             second.setBeginTime(first.getBeginTime());
             removedIds.add(first.getId());
         }
-        esIndexPoList.remove(0);
-        mergeIndex(esIndexPoList,removedIds);
+        esIndexList.remove(0);
+        mergeIndex(esIndexList,removedIds);
     }
 }

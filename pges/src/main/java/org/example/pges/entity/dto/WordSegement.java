@@ -12,7 +12,7 @@ import java.util.List;
  * @updateBy:
  */
 @Data
-public class WordSegementDTO {
+public class WordSegement {
     private String wordAlgorithm;
 
     private List<String> words;

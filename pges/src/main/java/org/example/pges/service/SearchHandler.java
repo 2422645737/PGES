@@ -10,6 +10,6 @@ package org.example.pges.service;
  * @copyright: 众阳健康
  */
 
-public interface ESSearchOptimizationService {
+public interface SearchHandler {
 
 }

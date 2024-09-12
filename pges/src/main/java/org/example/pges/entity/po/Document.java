@@ -19,7 +19,7 @@ import java.util.Date;
 
 @Data
 @TableName("business")
-public class BusinessPO {
+public class Document {
     @TableId
     private long outEmrDetailId;
 
