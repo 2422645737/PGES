@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.apdplat.word.WordSegmenter;
 import org.apdplat.word.segmentation.SegmentationAlgorithm;
 import org.apdplat.word.segmentation.Word;
+import org.apdplat.word.segmentation.WordRefiner;
 import org.example.pges.constance.IndexNumConst;
 import org.example.pges.constance.NodeCodeConst;
 import org.example.pges.constance.NumConst;
@@ -49,8 +50,9 @@ public class ESServiceImpl implements ESService {
     @Override
     public List<String> insert(TextDTO textDTO) {
         //查询库中当前不存在的索引
-        List<Word> seg = WordSegmenter.seg(textDTO.getText());
-        List<String> wordsSet = seg.stream().map(Word::getText).collect(Collectors.toList());
+        List<Word> seg = WordSegmenter.seg(textDTO.getText(),SegmentationAlgorithm.MaxNgramScore);
+        List<Word> refine = WordRefiner.refine(seg);
+        List<String> wordsSet = refine.stream().map(Word::getText).collect(Collectors.toList());
         return wordsSet;
     }
 
@@ -142,13 +144,12 @@ public class ESServiceImpl implements ESService {
             map.put(dateSegment,orDefault);
         }
         for(Date[] date : map.keySet()){
-            ESIndexPo esIndexPo = new ESIndexPo();
-            esIndexPo.setWord(key);
-            esIndexPo.setIds(map.getOrDefault(date,new ArrayList<>()).toArray(new Long[0]));
-            esIndexPo.setBeginTime(date[0]);
-            esIndexPo.setEndTime(date[1]);
-            esIndexPo.setCode(NodeCodeConst.B1014);
-            esIndexPo.setId(IdGenerator.generateId());
+            ESIndexPo esIndexPo = new ESIndexPo().setWord(key)
+                    .setBeginTime(date[0])
+                    .setEndTime(date[1])
+                    .setCode(NodeCodeConst.B1014)
+                    .setId(IdGenerator.generateId())
+                    .setIds(map.getOrDefault(date,new ArrayList<>()).toArray(new Long[0]));
             result.add(esIndexPo);
         }
     }
@@ -195,7 +196,7 @@ public class ESServiceImpl implements ESService {
     public void optimize() {
         //对于已经分好时间段的数组，如果占用长度过小，则进行合并优化
         List<String> leastIndex = esMapper.getLeastIndex(IndexNumConst.MIN_LENGTH);
-        if(leastIndex == null){
+        if(CollUtil.isEmpty(leastIndex)){
             return;
         }
         QueryWrapper queryWrapper = new QueryWrapper();
@@ -211,10 +212,10 @@ public class ESServiceImpl implements ESService {
         List<ESIndexPo> updateList = new ArrayList<>();
         for(String word : wordMap.keySet()){
             List<ESIndexPo> esIndexPos = wordMap.get(word);
-            //按照时间排序
-            esIndexPos = esIndexPos.stream().sorted(Comparator.comparing(ESIndexPo::getBeginTime)).collect(Collectors.toList());
+            esIndexPos = esIndexPos.stream()
+                    .sorted(Comparator.comparing(ESIndexPo::getBeginTime))
+                    .collect(Collectors.toList());
             mergeIndex(esIndexPos,removeIds);
-            //最终得到的是需要进行update操作的数据
             updateList.addAll(esIndexPos);
         }
         esMapper.updateById(updateList);
@@ -237,8 +238,7 @@ public class ESServiceImpl implements ESService {
             Long[] firstIds = first.getIds();
             Long[] secondIds = second.getIds();
             Long[] ids = ESDataTypeUtils.mergeArrayDistinct(firstIds, secondIds);
-            second.setIds(ids);
-            second.setBeginTime(first.getBeginTime());
+            second.setIds(ids).setBeginTime(first.getBeginTime());
             removedIds.add(first.getId());
             esIndexPoList.remove(0);
             mergeIndex(esIndexPoList,removedIds);
